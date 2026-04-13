@@ -84,26 +84,43 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Sidebar
-const sidebar = document.querySelector('.sidebar');
-const sidebarToggle = document.getElementById('sidebar-toggle');
+// Sidebar - with safe DOM checking
+function initSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
 
-// Force show/hide sidebar toggle based on viewport width (JavaScript override)
-function updateSidebarToggleVisibility() {
-    if (window.innerWidth <= 768) {
-        sidebarToggle.style.display = 'block';
-    } else {
-        sidebarToggle.style.display = 'none';
+    if (!sidebar || !sidebarToggle) {
+        console.warn('Sidebar elements not found');
+        return;
     }
+
+    // Force show/hide sidebar toggle based on viewport width (JavaScript override)
+    function updateSidebarToggleVisibility() {
+        console.log('updateSidebarToggleVisibility: width=', window.innerWidth);
+        if (window.innerWidth <= 768) {
+            sidebarToggle.style.display = 'block';
+            console.log('showing sidebar toggle');
+        } else {
+            sidebarToggle.style.display = 'none';
+            console.log('hiding sidebar toggle');
+        }
+    }
+
+    // Call on load and on resize
+    updateSidebarToggleVisibility();
+    window.addEventListener('resize', updateSidebarToggleVisibility);
+
+    sidebarToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+    });
 }
 
-// Call on load and on resize
-updateSidebarToggleVisibility();
-window.addEventListener('resize', updateSidebarToggleVisibility);
-
-sidebarToggle.addEventListener('click', () => {
-    sidebar.classList.toggle('open');
-});
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSidebar);
+} else {
+    initSidebar();
+}
 
 document.querySelectorAll('.sidebar-tab-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {

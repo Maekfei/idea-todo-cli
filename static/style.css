@@ -75,6 +75,7 @@ body {
     font-size: 20px;
     cursor: pointer;
     padding: 8px;
+    /* display: controlled by JavaScript based on viewport width */
 }
 
 .sidebar-tabs {
@@ -707,11 +708,6 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* Responsive */
-@media (min-width: 769px) {
-    .sidebar-toggle {
-        display: none;
-    }
-}
 
 @media (max-width: 1024px) {
     :root {
@@ -737,10 +733,6 @@ input:focus, textarea:focus, select:focus {
     .sidebar.open {
         left: 0;
         box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
-    }
-
-    .sidebar-toggle {
-        display: block;
     }
 
     .main-content {
