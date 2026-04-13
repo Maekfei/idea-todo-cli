@@ -69,7 +69,6 @@ body {
 }
 
 .sidebar-toggle {
-    display: none !important;
     background: none;
     border: none;
     color: var(--text);
@@ -708,6 +707,12 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* Responsive */
+@media (min-width: 769px) {
+    .sidebar-toggle {
+        display: none;
+    }
+}
+
 @media (max-width: 1024px) {
     :root {
         --sidebar-width: 240px;
@@ -735,7 +740,7 @@ input:focus, textarea:focus, select:focus {
     }
 
     .sidebar-toggle {
-        display: block !important;
+        display: block;
     }
 
     .main-content {

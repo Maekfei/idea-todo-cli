@@ -1,6 +1,6 @@
 // Service Worker for offline support
 
-const CACHE_NAME = 'idea-todo-v1';
+const CACHE_NAME = 'idea-todo-v2';
 const urlsToCache = [
     '/',
     '/app.js',
