@@ -108,11 +108,13 @@ function initSidebar() {
         console.log('updateSidebarToggleVisibility: window.innerWidth =', width);
 
         if (width <= 768) {
-            sidebarToggle.style.display = 'block';
+            // Force all visibility properties on mobile
+            sidebarToggle.setAttribute('style', 'display: block !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;');
             console.log('📱 Mobile detected - showing sidebar toggle');
             // Double check it's visible
             console.log('sidebarToggle.style.display:', sidebarToggle.style.display);
             console.log('computed display:', window.getComputedStyle(sidebarToggle).display);
+            console.log('sidebarToggle.getAttribute("style"):', sidebarToggle.getAttribute('style'));
         } else {
             sidebarToggle.style.display = 'none';
             console.log('🖥️ Desktop detected - hiding sidebar toggle');
