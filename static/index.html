@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e1e1e">
+    <title>Idea & Todo</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%231e1e1e' width='192' height='192'/><text x='50%' y='50%' font-size='120' fill='%23fff' text-anchor='middle' dominant-baseline='middle'>💡</text></svg>">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💡 Idea & Todo</h1>
+            <div class="header-actions">
+                <button id="voice-btn" class="voice-btn" title="语音输入">🎤</button>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="ideas">Ideas</button>
+            <button class="tab-btn" data-tab="todos">Todos</button>
+        </div>
+
+        <!-- IDEA TAB -->
+        <div id="ideas" class="tab-content active">
+            <div class="input-group">
+                <input id="idea-title" type="text" placeholder="输入idea标题...">
+                <textarea id="idea-desc" placeholder="描述（可选）..." rows="2"></textarea>
+                <input id="idea-tags" type="text" placeholder="标签（用空格分隔）...">
+                <button id="idea-add-btn" class="btn-primary">+ 添加Idea</button>
+            </div>
+            <div id="ideas-list" class="list"></div>
+        </div>
+
+        <!-- TODO TAB -->
+        <div id="todos" class="tab-content">
+            <div class="input-group">
+                <input id="todo-title" type="text" placeholder="输入任务...">
+                <input id="todo-deadline" type="date">
+                <select id="todo-priority">
+                    <option value="low">低</option>
+                    <option value="normal" selected>中</option>
+                    <option value="high">高</option>
+                </select>
+                <button id="todo-add-btn" class="btn-primary">+ 添加Todo</button>
+            </div>
+            <div class="filter-group">
+                <button class="filter-btn active" data-filter="">全部</button>
+                <button class="filter-btn" data-filter="pending">进行中</button>
+                <button class="filter-btn" data-filter="done">已完成</button>
+            </div>
+            <div id="todos-list" class="list"></div>
+        </div>
+    </div>
+
+    <div id="voice-status" class="voice-status"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

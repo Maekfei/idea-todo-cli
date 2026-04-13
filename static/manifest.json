@@ -1,0 +1,42 @@
+{
+  "name": "Idea & Todo Tracker",
+  "short_name": "Idea & Todo",
+  "description": "记录想法和任务，支持语音输入",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e1e1e",
+  "theme_color": "#4a9eff",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%234a9eff' width='192' height='192'/><text x='50%' y='50%' font-size='120' fill='white' text-anchor='middle' dominant-baseline='middle'>💡</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><rect fill='%231e1e1e' width='540' height='720'/><text x='270' y='100' font-size='48' fill='%234a9eff' text-anchor='middle'>💡 Idea & Todo</text></svg>",
+      "sizes": "540x720",
+      "form_factor": "narrow"
+    }
+  ],
+  "categories": ["productivity"],
+  "shortcuts": [
+    {
+      "name": "快速添加Idea",
+      "short_name": "Idea",
+      "description": "快速添加新的想法",
+      "url": "/?tab=ideas",
+      "icons": []
+    },
+    {
+      "name": "快速添加Todo",
+      "short_name": "Todo",
+      "description": "快速添加新的任务",
+      "url": "/?tab=todos",
+      "icons": []
+    }
+  ]
+}
