@@ -1,1 +1,1 @@
-web: gunicorn app_mongodb:app
+web: gunicorn --bind 0.0.0.0:$PORT app_mongodb:app
