@@ -88,6 +88,19 @@ document.addEventListener('click', (e) => {
 const sidebar = document.querySelector('.sidebar');
 const sidebarToggle = document.getElementById('sidebar-toggle');
 
+// Force show/hide sidebar toggle based on viewport width (JavaScript override)
+function updateSidebarToggleVisibility() {
+    if (window.innerWidth <= 768) {
+        sidebarToggle.style.display = 'block';
+    } else {
+        sidebarToggle.style.display = 'none';
+    }
+}
+
+// Call on load and on resize
+updateSidebarToggleVisibility();
+window.addEventListener('resize', updateSidebarToggleVisibility);
+
 sidebarToggle.addEventListener('click', () => {
     sidebar.classList.toggle('open');
 });
