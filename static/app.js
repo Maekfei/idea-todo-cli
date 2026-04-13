@@ -1,33 +1,93 @@
-// Idea & Todo PWA with Sidebar & Swipe
+// Idea & Todo PWA with User Isolation & Smart Extract
+
+// User Management
+let currentUser = localStorage.getItem('currentUser') || 'default';
+const users = JSON.parse(localStorage.getItem('ideaTodoUsers') || '["default"]');
+
+function getHeaders() {
+    return {'X-User-ID': currentUser, 'Content-Type': 'application/json'};
+}
 
 const API = {
-    getIdeas: () => fetch('/api/idea').then(r => r.json()),
+    getIdeas: () => fetch(`/api/idea?user_id=${currentUser}`).then(r => r.json()),
     addIdea: (title, desc, tags) => fetch('/api/idea', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: getHeaders(),
         body: JSON.stringify({title, desc, tags: tags.split(' ').filter(Boolean)})
     }).then(r => r.json()),
-    deleteIdea: (id) => fetch(`/api/idea/${id}`, {method: 'DELETE'}),
+    deleteIdea: (id) => fetch(`/api/idea/${id}`, {method: 'DELETE', headers: getHeaders()}),
 
-    getTodos: (status='') => fetch(`/api/todo?status=${status}`).then(r => r.json()),
+    getTodos: (status='') => fetch(`/api/todo?status=${status}&user_id=${currentUser}`).then(r => r.json()),
     addTodo: (title, deadline, priority) => fetch('/api/todo', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: getHeaders(),
         body: JSON.stringify({title, deadline, priority})
     }).then(r => r.json()),
-    markDone: (id) => fetch(`/api/todo/${id}/done`, {method: 'PATCH'}).then(r => r.json()),
-    deleteTodo: (id) => fetch(`/api/todo/${id}`, {method: 'DELETE'}),
+    markDone: (id) => fetch(`/api/todo/${id}/done`, {method: 'PATCH', headers: getHeaders()}).then(r => r.json()),
+    deleteTodo: (id) => fetch(`/api/todo/${id}`, {method: 'DELETE', headers: getHeaders()}),
 
     extract: (text) => fetch('/api/extract', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: getHeaders(),
         body: JSON.stringify({text})
     }).then(r => r.json())
 };
 
+// User Selector UI
+const userBtn = document.getElementById('user-btn');
+const userMenu = document.getElementById('user-menu');
+const usernameInput = document.getElementById('username-input');
+const userConfirmBtn = document.getElementById('user-confirm-btn');
+const userList = document.getElementById('user-list');
+
+function updateUserUI() {
+    userBtn.textContent = `👤 ${currentUser}`;
+    userList.innerHTML = users.map(u => `
+        <button class="user-item ${u === currentUser ? 'active' : ''}" onclick="switchUser('${u}')">${u}</button>
+    `).join('');
+}
+
+function switchUser(username) {
+    currentUser = username;
+    localStorage.setItem('currentUser', currentUser);
+    userMenu.style.display = 'none';
+    updateUserUI();
+    loadIdeas();
+    loadTodos();
+}
+
+function addNewUser() {
+    const username = usernameInput.value.trim();
+    if (!username) return;
+    if (users.includes(username)) {
+        alert('用户已存在');
+        return;
+    }
+    users.push(username);
+    localStorage.setItem('ideaTodoUsers', JSON.stringify(users));
+    switchUser(username);
+    usernameInput.value = '';
+}
+
+userBtn.addEventListener('click', () => {
+    userMenu.style.display = userMenu.style.display === 'none' ? 'block' : 'none';
+});
+
+userConfirmBtn.addEventListener('click', addNewUser);
+usernameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') addNewUser();
+});
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.user-selector')) {
+        userMenu.style.display = 'none';
+    }
+});
+
 // Sidebar
 const sidebar = document.querySelector('.sidebar');
 const sidebarToggle = document.getElementById('sidebar-toggle');
+
 sidebarToggle.addEventListener('click', () => {
     sidebar.classList.toggle('open');
 });
@@ -128,16 +188,13 @@ function setupSwipeDelete(element, id, type) {
         element.style.transition = 'all 0.3s ease';
 
         if (diff < -threshold) {
-            // Swiped left enough to delete
             element.classList.add('swiping');
         } else {
-            // Reset
             element.classList.remove('swiping');
             element.querySelector('.item-content').style.transform = 'translateX(0)';
         }
     }, false);
 
-    // Delete button click
     const deleteBtn = element.querySelector('.btn-delete');
     deleteBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -298,28 +355,37 @@ document.getElementById('extract-btn').addEventListener('click', async () => {
     try {
         const response = await API.extract(text);
 
-        if (response.ideas) {
-            const ideasHtml = response.ideas.map(idea => `
-                <div class="extract-item">
-                    <strong>💡 ${idea.title}</strong>
-                    ${idea.desc ? `<p>${idea.desc}</p>` : ''}
-                </div>
-            `).join('');
+        if (response.ideas || response.todos) {
+            let html = '<div class="extract-items">';
 
-            const todosHtml = response.todos.map(todo => `
-                <div class="extract-item todo">
-                    <strong>📝 ${todo.title}</strong>
-                    ${todo.deadline ? `<p>截止: ${todo.deadline}</p>` : ''}
-                </div>
-            `).join('');
+            if (response.ideas && response.ideas.length) {
+                html += '<h3>💡 Ideas</h3>';
+                html += response.ideas.map(idea => `
+                    <div class="extract-item">
+                        <div class="extract-item-header">
+                            <strong>${idea.title}</strong>
+                            <button class="btn-add-idea" onclick="addExtractedIdea('${idea.title.replace(/'/g, "\\'")}', '${(idea.desc || '').replace(/'/g, "\\'")}', '${(idea.tags || []).join(' ').replace(/'/g, "\\'")}'">+ 添加</button>
+                        </div>
+                        ${idea.desc ? `<p>${idea.desc}</p>` : ''}
+                    </div>
+                `).join('');
+            }
 
-            result.innerHTML = `
-                <div>
-                    <h3>✨ 提取结果</h3>
-                    ${ideasHtml}
-                    ${todosHtml}
-                </div>
-            `;
+            if (response.todos && response.todos.length) {
+                html += '<h3>📝 Todos</h3>';
+                html += response.todos.map(todo => `
+                    <div class="extract-item todo">
+                        <div class="extract-item-header">
+                            <strong>${todo.title}</strong>
+                            <button class="btn-add-todo" onclick="addExtractedTodo('${todo.title.replace(/'/g, "\\'")}', '${(todo.deadline || '').replace(/'/g, "\\'")}', '${(todo.priority || 'normal').replace(/'/g, "\\'")}'">+ 添加</button>
+                        </div>
+                        ${todo.deadline ? `<p>截止: ${todo.deadline}</p>` : ''}
+                    </div>
+                `).join('');
+            }
+
+            html += '</div>';
+            result.innerHTML = html;
         } else {
             result.innerHTML = '<p class="empty">无法提取内容，请重试</p>';
         }
@@ -331,7 +397,26 @@ document.getElementById('extract-btn').addEventListener('click', async () => {
     }
 });
 
+async function addExtractedIdea(title, desc, tags) {
+    if (!title) return;
+    const idea = await API.addIdea(title, desc, tags);
+    if (idea.id) {
+        alert('已添加到Ideas');
+        loadIdeas();
+    }
+}
+
+async function addExtractedTodo(title, deadline, priority) {
+    if (!title) return;
+    const todo = await API.addTodo(title, deadline, priority || 'normal');
+    if (todo.id) {
+        alert('已添加到Todos');
+        loadTodos();
+    }
+}
+
 // Init
+updateUserUI();
 loadIdeas();
 loadTodos();
 

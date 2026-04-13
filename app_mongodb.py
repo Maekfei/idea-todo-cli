@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.12
-"""Flask backend for Idea-Todo PWA with MongoDB"""
+"""Flask backend for Idea-Todo PWA with MongoDB and User Isolation"""
 
 from flask import Flask, jsonify, request, send_file
 from pymongo import MongoClient
@@ -23,8 +23,15 @@ try:
     todos_col = db['todos']
 except Exception as e:
     print(f"MongoDB Connection Error: {e}")
-    print("Falling back to JSON storage...")
     db = None
+
+
+def get_user_id():
+    """Extract user_id from request (header or param)"""
+    user_id = request.headers.get('X-User-ID') or request.args.get('user_id')
+    if not user_id:
+        return 'default'
+    return user_id
 
 
 # ===== API Routes =====
@@ -38,7 +45,8 @@ def get_ideas():
     if db is None:
         return jsonify([])
 
-    ideas = list(ideas_col.find())
+    user_id = get_user_id()
+    ideas = list(ideas_col.find({'user_id': user_id}))
     for idea in ideas:
         idea['id'] = str(idea['_id'])
         del idea['_id']
@@ -55,11 +63,13 @@ def add_idea():
     if db is None:
         return jsonify({'error': 'Database unavailable'}), 500
 
+    user_id = get_user_id()
     data = request.json
     idea = {
         'title': data.get('title'),
         'desc': data.get('desc', ''),
         'tags': data.get('tags', []),
+        'user_id': user_id,
         'created': datetime.utcnow()
     }
     result = ideas_col.insert_one(idea)
@@ -74,8 +84,9 @@ def delete_idea(idea_id):
     if db is None:
         return '', 500
 
+    user_id = get_user_id()
     try:
-        ideas_col.delete_one({'_id': ObjectId(idea_id)})
+        ideas_col.delete_one({'_id': ObjectId(idea_id), 'user_id': user_id})
     except:
         pass
 
@@ -87,7 +98,8 @@ def get_todos():
     if db is None:
         return jsonify([])
 
-    todos = list(todos_col.find())
+    user_id = get_user_id()
+    todos = list(todos_col.find({'user_id': user_id}))
     for todo in todos:
         todo['id'] = str(todo['_id'])
         del todo['_id']
@@ -104,12 +116,14 @@ def add_todo():
     if db is None:
         return jsonify({'error': 'Database unavailable'}), 500
 
+    user_id = get_user_id()
     data = request.json
     todo = {
         'title': data.get('title'),
         'idea_id': data.get('idea_id', ''),
         'deadline': data.get('deadline', ''),
         'priority': data.get('priority', 'normal'),
+        'user_id': user_id,
         'status': 'pending',
         'created': datetime.utcnow()
     }
@@ -125,14 +139,21 @@ def mark_todo_done(todo_id):
     if db is None:
         return '', 500
 
+    user_id = get_user_id()
     try:
-        todos_col.update_one({'_id': ObjectId(todo_id)}, {'$set': {'status': 'done'}})
+        todos_col.update_one(
+            {'_id': ObjectId(todo_id), 'user_id': user_id},
+            {'$set': {'status': 'done'}}
+        )
         todo = todos_col.find_one({'_id': ObjectId(todo_id)})
-        todo['id'] = str(todo['_id'])
-        del todo['_id']
-        return jsonify(todo)
+        if todo:
+            todo['id'] = str(todo['_id'])
+            del todo['_id']
+            return jsonify(todo)
     except:
-        return '', 404
+        pass
+
+    return '', 404
 
 
 @app.route('/api/todo/<todo_id>', methods=['DELETE'])
@@ -140,8 +161,9 @@ def delete_todo(todo_id):
     if db is None:
         return '', 500
 
+    user_id = get_user_id()
     try:
-        todos_col.delete_one({'_id': ObjectId(todo_id)})
+        todos_col.delete_one({'_id': ObjectId(todo_id), 'user_id': user_id})
     except:
         pass
 
@@ -153,6 +175,7 @@ def extract_text():
     """Extract ideas and todos from text using Kimi API"""
     import json as json_lib
 
+    user_id = get_user_id()
     data = request.json
     text = data.get('text', '')
 
@@ -211,7 +234,6 @@ def extract_text():
 
         # Parse JSON from response
         try:
-            # Try to extract JSON from the response
             start = content.find('{')
             end = content.rfind('}') + 1
             if start >= 0 and end > start:
@@ -240,8 +262,6 @@ def open_browser():
 
 
 if __name__ == '__main__':
-    # Only auto-open browser in development
     if os.getenv('FLASK_ENV') != 'production':
         threading.Thread(target=open_browser, daemon=True).start()
-
-    app.run(debug=False, port=int(os.getenv('PORT', 5000)))
+    app.run(debug=False, port=int(os.getenv('PORT', 5000)), host='0.0.0.0')

@@ -35,8 +35,18 @@
         <!-- Main Content -->
         <main class="main-content">
             <header>
-                <h1>💡 Idea & Todo</h1>
+                <div class="header-left">
+                    <h1>💡 Idea & Todo</h1>
+                </div>
                 <div class="header-actions">
+                    <div class="user-selector">
+                        <button id="user-btn" class="user-btn">👤 用户</button>
+                        <div id="user-menu" class="user-menu" style="display: none;">
+                            <input id="username-input" type="text" placeholder="输入用户名..." maxlength="20">
+                            <button id="user-confirm-btn" class="user-confirm-btn">确认</button>
+                            <div id="user-list" class="user-list"></div>
+                        </div>
+                    </div>
                     <button id="voice-btn" class="voice-btn" title="语音输入">🎤</button>
                 </div>
             </header>
