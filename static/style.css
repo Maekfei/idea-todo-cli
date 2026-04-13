@@ -69,12 +69,13 @@ body {
 }
 
 .sidebar-toggle {
-    display: none;
+    display: none !important;
     background: none;
     border: none;
     color: var(--text);
     font-size: 20px;
     cursor: pointer;
+    padding: 8px;
 }
 
 .sidebar-tabs {
@@ -734,7 +735,7 @@ input:focus, textarea:focus, select:focus {
     }
 
     .sidebar-toggle {
-        display: block;
+        display: block !important;
     }
 
     .main-content {
