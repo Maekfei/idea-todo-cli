@@ -34,7 +34,7 @@ def index():
 
 @app.route('/api/idea', methods=['GET'])
 def get_ideas():
-    if not db:
+    if db is None:
         return jsonify([])
 
     ideas = list(ideas_col.find())
@@ -51,7 +51,7 @@ def get_ideas():
 
 @app.route('/api/idea', methods=['POST'])
 def add_idea():
-    if not db:
+    if db is None:
         return jsonify({'error': 'Database unavailable'}), 500
 
     data = request.json
@@ -69,7 +69,7 @@ def add_idea():
 
 @app.route('/api/idea/<idea_id>', methods=['DELETE'])
 def delete_idea(idea_id):
-    if not db:
+    if db is None:
         return '', 500
 
     try:
@@ -82,7 +82,7 @@ def delete_idea(idea_id):
 
 @app.route('/api/todo', methods=['GET'])
 def get_todos():
-    if not db:
+    if db is None:
         return jsonify([])
 
     todos = list(todos_col.find())
@@ -99,7 +99,7 @@ def get_todos():
 
 @app.route('/api/todo', methods=['POST'])
 def add_todo():
-    if not db:
+    if db is None:
         return jsonify({'error': 'Database unavailable'}), 500
 
     data = request.json
@@ -119,7 +119,7 @@ def add_todo():
 
 @app.route('/api/todo/<todo_id>/done', methods=['PATCH'])
 def mark_todo_done(todo_id):
-    if not db:
+    if db is None:
         return '', 500
 
     try:
@@ -134,7 +134,7 @@ def mark_todo_done(todo_id):
 
 @app.route('/api/todo/<todo_id>', methods=['DELETE'])
 def delete_todo(todo_id):
-    if not db:
+    if db is None:
         return '', 500
 
     try:
