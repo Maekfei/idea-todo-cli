@@ -63,6 +63,7 @@ def add_idea():
     }
     result = ideas_col.insert_one(idea)
     idea['id'] = str(result.inserted_id)
+    del idea['_id']
 
     return jsonify(idea), 201
 
@@ -113,6 +114,7 @@ def add_todo():
     }
     result = todos_col.insert_one(todo)
     todo['id'] = str(result.inserted_id)
+    del todo['_id']
 
     return jsonify(todo), 201
 
