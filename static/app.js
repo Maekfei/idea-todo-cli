@@ -1,4 +1,4 @@
-// Idea & Todo PWA Frontend
+// Idea & Todo PWA with Sidebar & Swipe
 
 const API = {
     getIdeas: () => fetch('/api/idea').then(r => r.json()),
@@ -16,8 +16,33 @@ const API = {
         body: JSON.stringify({title, deadline, priority})
     }).then(r => r.json()),
     markDone: (id) => fetch(`/api/todo/${id}/done`, {method: 'PATCH'}).then(r => r.json()),
-    deleteTodo: (id) => fetch(`/api/todo/${id}`, {method: 'DELETE'})
+    deleteTodo: (id) => fetch(`/api/todo/${id}`, {method: 'DELETE'}),
+
+    extract: (text) => fetch('/api/extract', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({text})
+    }).then(r => r.json())
 };
+
+// Sidebar
+const sidebar = document.querySelector('.sidebar');
+const sidebarToggle = document.getElementById('sidebar-toggle');
+sidebarToggle.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+});
+
+document.querySelectorAll('.sidebar-tab-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.sidebar-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.sidebar-content').forEach(c => c.classList.remove('active'));
+        e.target.classList.add('active');
+        const type = e.target.dataset.type;
+        document.getElementById(`sidebar-${type}`).classList.add('active');
+        if (type === 'ideas') loadIdeas();
+        else loadTodos();
+    });
+});
 
 // Voice Recognition
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -62,8 +87,8 @@ document.getElementById('voice-btn').addEventListener('click', () => {
         recognition.stop();
     } else {
         const active = document.querySelector('.tab-btn.active').dataset.tab;
-        voiceMode = active === 'ideas' ? 'idea' : 'todo';
-        recognition.start();
+        voiceMode = (active === 'ideas') ? 'idea' : (active === 'todos' ? 'todo' : null);
+        if (voiceMode) recognition.start();
     }
 });
 
@@ -77,20 +102,94 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
+// ===== SWIPE DELETE =====
+function setupSwipeDelete(element, id, type) {
+    let startX = 0;
+    let currentX = 0;
+    const threshold = 60;
+
+    element.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+        element.style.transition = 'none';
+    }, false);
+
+    element.addEventListener('touchmove', (e) => {
+        currentX = e.touches[0].clientX;
+        const diff = currentX - startX;
+
+        if (diff < -10) {
+            element.classList.add('swiping');
+            element.querySelector('.item-content').style.transform = `translateX(${Math.max(diff, -80)}px)`;
+        }
+    }, false);
+
+    element.addEventListener('touchend', () => {
+        const diff = currentX - startX;
+        element.style.transition = 'all 0.3s ease';
+
+        if (diff < -threshold) {
+            // Swiped left enough to delete
+            element.classList.add('swiping');
+        } else {
+            // Reset
+            element.classList.remove('swiping');
+            element.querySelector('.item-content').style.transform = 'translateX(0)';
+        }
+    }, false);
+
+    // Delete button click
+    const deleteBtn = element.querySelector('.btn-delete');
+    deleteBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (confirm('确定删除？')) {
+            if (type === 'idea') await API.deleteIdea(id);
+            else await API.deleteTodo(id);
+            loadIdeas();
+            loadTodos();
+        }
+    });
+}
+
 // ===== IDEAS =====
 async function loadIdeas() {
     const ideas = await API.getIdeas();
-    const html = ideas.map(idea => `
-        <div class="item">
-            <div class="item-header">
-                <strong>${idea.title}</strong>
-                <button class="btn-delete" onclick="deleteIdeaItem('${idea.id}')">删除</button>
+    const mainList = document.getElementById('ideas-list');
+    const sidebarList = document.querySelector('#sidebar-ideas .history-list');
+
+    const itemHtml = ideas.map(idea => `
+        <div class="item" data-id="${idea.id}">
+            <div class="item-content">
+                <div class="item-header">
+                    <strong>${idea.title}</strong>
+                </div>
+                ${idea.desc ? `<p>${idea.desc}</p>` : ''}
+                ${idea.tags.length ? `<div class="tags">${idea.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
             </div>
-            ${idea.desc ? `<p>${idea.desc}</p>` : ''}
-            ${idea.tags.length ? `<div class="tags">${idea.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
+            <div class="item-actions">
+                <button class="btn-delete">删除</button>
+            </div>
         </div>
     `).join('');
-    document.getElementById('ideas-list').innerHTML = html || '<p class="empty">暂无ideas</p>';
+
+    mainList.innerHTML = itemHtml || '<p class="empty">暂无ideas</p>';
+    sidebarList.innerHTML = ideas.map(i => `
+        <div class="history-item" onclick="highlightIdea('${i.id}')">${i.title}</div>
+    `).join('') || '<p class="empty">暂无ideas</p>';
+
+    document.querySelectorAll('#ideas-list .item').forEach(item => {
+        setupSwipeDelete(item, item.dataset.id, 'idea');
+    });
+}
+
+function highlightIdea(id) {
+    const item = document.querySelector(`#ideas-list .item[data-id="${id}"]`);
+    if (item) {
+        item.scrollIntoView({behavior: 'smooth', block: 'center'});
+        item.style.background = 'rgba(6, 182, 212, 0.2)';
+        setTimeout(() => {
+            item.style.background = '';
+        }, 2000);
+    }
 }
 
 document.getElementById('idea-add-btn').addEventListener('click', async () => {
@@ -109,31 +208,50 @@ document.getElementById('idea-add-btn').addEventListener('click', async () => {
     loadIdeas();
 });
 
-async function deleteIdeaItem(id) {
-    if (confirm('确定删除？')) {
-        await API.deleteIdea(id);
-        loadIdeas();
-    }
-}
-
 // ===== TODOS =====
 let currentFilter = '';
 
 async function loadTodos() {
     const todos = await API.getTodos(currentFilter);
-    const html = todos.map(todo => `
-        <div class="item ${todo.status}">
-            <div class="item-header">
-                <input type="checkbox" ${todo.status === 'done' ? 'checked' : ''}
-                       onchange="markTodoDone('${todo.id}', this.checked)">
-                <span class="priority-badge priority-${todo.priority}">${todo.priority}</span>
-                <strong>${todo.title}</strong>
-                <button class="btn-delete" onclick="deleteTodoItem('${todo.id}')">删除</button>
+    const mainList = document.getElementById('todos-list');
+    const sidebarList = document.querySelector('#sidebar-todos .history-list');
+
+    const itemHtml = todos.map(todo => `
+        <div class="item ${todo.status}" data-id="${todo.id}">
+            <div class="item-content">
+                <div class="item-header">
+                    <input type="checkbox" ${todo.status === 'done' ? 'checked' : ''}
+                           onchange="markTodoDone('${todo.id}', this.checked)">
+                    <span class="priority-badge priority-${todo.priority}">${todo.priority}</span>
+                    <strong>${todo.title}</strong>
+                </div>
+                ${todo.deadline ? `<p class="deadline">${todo.deadline}</p>` : ''}
             </div>
-            ${todo.deadline ? `<p class="deadline">截止: ${todo.deadline}</p>` : ''}
+            <div class="item-actions">
+                <button class="btn-delete">删除</button>
+            </div>
         </div>
     `).join('');
-    document.getElementById('todos-list').innerHTML = html || '<p class="empty">暂无todos</p>';
+
+    mainList.innerHTML = itemHtml || '<p class="empty">暂无todos</p>';
+    sidebarList.innerHTML = todos.map(t => `
+        <div class="history-item" onclick="highlightTodo('${t.id}')">${t.title}</div>
+    `).join('') || '<p class="empty">暂无todos</p>';
+
+    document.querySelectorAll('#todos-list .item').forEach(item => {
+        setupSwipeDelete(item, item.dataset.id, 'todo');
+    });
+}
+
+function highlightTodo(id) {
+    const item = document.querySelector(`#todos-list .item[data-id="${id}"]`);
+    if (item) {
+        item.scrollIntoView({behavior: 'smooth', block: 'center'});
+        item.style.background = 'rgba(6, 182, 212, 0.2)';
+        setTimeout(() => {
+            item.style.background = '';
+        }, 2000);
+    }
 }
 
 document.getElementById('todo-add-btn').addEventListener('click', async () => {
@@ -166,12 +284,52 @@ async function markTodoDone(id, isDone) {
     loadTodos();
 }
 
-async function deleteTodoItem(id) {
-    if (confirm('确定删除？')) {
-        await API.deleteTodo(id);
-        loadTodos();
+// ===== SMART EXTRACT =====
+document.getElementById('extract-btn').addEventListener('click', async () => {
+    const text = document.getElementById('extract-text').value.trim();
+    if (!text) return;
+
+    const btn = document.getElementById('extract-btn');
+    const result = document.getElementById('extract-result');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span> 分析中...';
+
+    try {
+        const response = await API.extract(text);
+
+        if (response.ideas) {
+            const ideasHtml = response.ideas.map(idea => `
+                <div class="extract-item">
+                    <strong>💡 ${idea.title}</strong>
+                    ${idea.desc ? `<p>${idea.desc}</p>` : ''}
+                </div>
+            `).join('');
+
+            const todosHtml = response.todos.map(todo => `
+                <div class="extract-item todo">
+                    <strong>📝 ${todo.title}</strong>
+                    ${todo.deadline ? `<p>截止: ${todo.deadline}</p>` : ''}
+                </div>
+            `).join('');
+
+            result.innerHTML = `
+                <div>
+                    <h3>✨ 提取结果</h3>
+                    ${ideasHtml}
+                    ${todosHtml}
+                </div>
+            `;
+        } else {
+            result.innerHTML = '<p class="empty">无法提取内容，请重试</p>';
+        }
+    } catch (err) {
+        result.innerHTML = '<p class="empty">提取失败：' + err.message + '</p>';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '✨ 智能提取';
     }
-}
+});
 
 // Init
 loadIdeas();

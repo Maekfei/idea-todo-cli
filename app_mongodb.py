@@ -8,6 +8,7 @@ import webbrowser
 import threading
 import time
 import os
+import requests
 from bson import ObjectId
 
 app = Flask(__name__, static_folder='static', static_url_path='')
@@ -145,6 +146,76 @@ def delete_todo(todo_id):
         pass
 
     return '', 204
+
+
+@app.route('/api/extract', methods=['POST'])
+def extract_text():
+    """Extract ideas and todos from text using Kimi API"""
+    data = request.json
+    text = data.get('text', '')
+
+    if not text:
+        return jsonify({'error': 'No text provided'}), 400
+
+    api_key = os.getenv('KIMI_API_KEY')
+    if not api_key:
+        return jsonify({'error': 'API key not configured'}), 500
+
+    try:
+        response = requests.post(
+            'https://xuedingmao.top/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': 'kimi-k2.5',
+                'messages': [
+                    {
+                        'role': 'user',
+                        'content': f"""从以下文本中提取ideas和todos，返回JSON格式：
+{{"ideas": [{{"title": "...", "desc": "...", "tags": ["tag1", "tag2"]}}], "todos": [{{"title": "...", "deadline": "YYYY-MM-DD", "priority": "low|normal|high"}}]}}
+
+文本：
+{text}
+
+要求：
+- 提取出所有有意义的ideas和todos
+- ideas：创意、想法、观点
+- todos：任务、行动项、待办事项
+- 优先级：high(紧急), normal(普通), low(低优先级)
+- 返回纯JSON，无其他文本"""
+                    }
+                ],
+                'temperature': 0.3
+            },
+            timeout=30
+        )
+
+        if response.status_code != 200:
+            return jsonify({'error': f'API error: {response.status_code}'}), 500
+
+        result = response.json()
+        content = result['choices'][0]['message']['content']
+
+        # Parse JSON from response
+        import json as json_lib
+        try:
+            # Try to extract JSON from the response
+            start = content.find('{')
+            end = content.rfind('}') + 1
+            if start >= 0 and end > start:
+                extracted = json_lib.loads(content[start:end])
+                return jsonify(extracted)
+            else:
+                return jsonify({'ideas': [], 'todos': []})
+        except:
+            return jsonify({'ideas': [], 'todos': []})
+
+    except requests.exceptions.Timeout:
+        return jsonify({'error': 'Request timeout'}), 504
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 def open_browser():

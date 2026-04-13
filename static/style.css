@@ -1,4 +1,4 @@
-/* Modern Dark Theme with Gradients */
+/* Modern Dark Theme with Sidebar */
 :root {
     --bg: #0f1419;
     --bg-light: #1a1f2e;
@@ -12,6 +12,7 @@
     --success: #10b981;
     --border: #374151;
     --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --sidebar-width: 280px;
 }
 
 * {
@@ -20,19 +21,135 @@
     box-sizing: border-box;
 }
 
+html, body {
+    height: 100%;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background: linear-gradient(135deg, var(--bg) 0%, #1a2332 100%);
     color: var(--text);
     line-height: 1.6;
+}
+
+/* App Layout */
+.app {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-light);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    z-index: 900;
+    overflow-y: auto;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-header h2 {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.sidebar-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.sidebar-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.sidebar-tab-btn {
+    flex: 1;
+    padding: 12px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+    font-size: 13px;
+}
+
+.sidebar-tab-btn:hover {
+    color: var(--primary);
+}
+
+.sidebar-tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.sidebar-content {
+    display: none;
+    padding: 8px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.sidebar-content.active {
+    display: block;
+}
+
+.history-item {
+    padding: 10px 12px;
+    background: var(--bg-lighter);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-item:hover {
+    background: rgba(6, 182, 212, 0.1);
+    border-left-color: var(--primary);
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
     padding-bottom: 60px;
-    min-height: 100vh;
 }
 
 .container {
     max-width: 600px;
     margin: 0 auto;
     padding: 0 12px;
+    flex: 1;
 }
 
 /* Header */
@@ -44,6 +161,7 @@ header {
     align-items: center;
     margin-bottom: 24px;
     background: linear-gradient(to bottom, rgba(15, 20, 25, 0.8), transparent);
+    padding: 24px 12px;
 }
 
 header h1 {
@@ -66,6 +184,7 @@ header h1 {
     gap: 12px;
     margin-bottom: 24px;
     border-bottom: 1px solid var(--border);
+    padding: 0 12px;
 }
 
 .tab-btn {
@@ -93,6 +212,7 @@ header h1 {
 /* Tab Content */
 .tab-content {
     display: none;
+    padding: 0 12px;
 }
 
 .tab-content.active {
@@ -177,7 +297,6 @@ input:focus, textarea:focus, select:focus {
 
 .btn-delete:hover {
     background: rgba(239, 68, 68, 0.3);
-    transform: translateY(-1px);
 }
 
 .voice-btn {
@@ -247,12 +366,43 @@ input:focus, textarea:focus, select:focus {
     border: 1px solid var(--border);
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
 }
 
 .item:hover {
     border-color: var(--primary);
     box-shadow: 0 4px 16px rgba(6, 182, 212, 0.15);
     transform: translateY(-2px);
+}
+
+.item-content {
+    flex: 1;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.item.swiping .item-content {
+    transform: translateX(-60px);
+}
+
+.item-actions {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-right: 12px;
+    background: linear-gradient(to left, rgba(239, 68, 68, 0.2), transparent);
+    min-width: 80px;
+}
+
+.item.swiping .item-actions {
+    opacity: 1;
 }
 
 .item.done {
@@ -271,17 +421,17 @@ input:focus, textarea:focus, select:focus {
     margin-bottom: 8px;
 }
 
-.item-header strong {
-    flex: 1;
-    font-size: 15px;
-    color: var(--text);
-}
-
 .item-header input[type="checkbox"] {
     width: 20px;
     height: 20px;
     cursor: pointer;
     accent-color: var(--success);
+}
+
+.item-header strong {
+    flex: 1;
+    font-size: 15px;
+    color: var(--text);
 }
 
 .priority-badge {
@@ -364,6 +514,23 @@ input:focus, textarea:focus, select:focus {
     margin-bottom: 12px;
 }
 
+/* Extract Result */
+.extract-result {
+    margin-top: 20px;
+}
+
+.extract-item {
+    background: var(--bg-light);
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    border-left: 3px solid var(--primary);
+}
+
+.extract-item.todo {
+    border-left-color: var(--secondary);
+}
+
 /* Voice Status */
 .voice-status {
     position: fixed;
@@ -385,18 +552,55 @@ input:focus, textarea:focus, select:focus {
     bottom: 24px;
 }
 
+/* Loading */
+.loading {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(6, 182, 212, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--primary);
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 /* Responsive */
-@media (max-width: 480px) {
-    .container {
-        padding: 0 8px;
+@media (max-width: 1024px) {
+    :root {
+        --sidebar-width: 240px;
+    }
+}
+
+@media (max-width: 768px) {
+    :root {
+        --sidebar-width: 0;
     }
 
-    .item-header {
-        flex-wrap: wrap;
+    .sidebar {
+        position: fixed;
+        left: -280px;
+        width: 280px;
+        transition: left 0.3s ease;
+        z-index: 1000;
     }
 
-    .item-header strong {
-        flex: 1 0 100%;
+    .sidebar.open {
+        left: 0;
+    }
+
+    .sidebar-toggle {
+        display: block;
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+
+    header h1 {
+        font-size: 22px;
     }
 
     input, textarea, select {
@@ -404,7 +608,7 @@ input:focus, textarea:focus, select:focus {
     }
 }
 
-/* PWA Install Prompt */
+/* PWA */
 @media (display-mode: standalone) {
     body {
         padding-bottom: 20px;
