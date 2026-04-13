@@ -84,41 +84,61 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Sidebar - with safe DOM checking
+// Sidebar - with safe DOM checking and debugging
 function initSidebar() {
+    console.log('=== initSidebar called ===');
     const sidebar = document.querySelector('.sidebar');
     const sidebarToggle = document.getElementById('sidebar-toggle');
 
+    console.log('sidebar element:', sidebar);
+    console.log('sidebarToggle element:', sidebarToggle);
+
     if (!sidebar || !sidebarToggle) {
-        console.warn('Sidebar elements not found');
+        console.error('❌ Sidebar elements not found!');
+        console.error('Looking for sidebar with querySelector: .sidebar');
+        console.error('Looking for toggle with getElementById: sidebar-toggle');
         return;
     }
 
-    // Force show/hide sidebar toggle based on viewport width (JavaScript override)
+    console.log('✅ Sidebar elements found');
+
+    // Force show/hide sidebar toggle based on viewport width
     function updateSidebarToggleVisibility() {
-        console.log('updateSidebarToggleVisibility: width=', window.innerWidth);
-        if (window.innerWidth <= 768) {
+        const width = window.innerWidth;
+        console.log('updateSidebarToggleVisibility: window.innerWidth =', width);
+
+        if (width <= 768) {
             sidebarToggle.style.display = 'block';
-            console.log('showing sidebar toggle');
+            console.log('📱 Mobile detected - showing sidebar toggle');
+            // Double check it's visible
+            console.log('sidebarToggle.style.display:', sidebarToggle.style.display);
+            console.log('computed display:', window.getComputedStyle(sidebarToggle).display);
         } else {
             sidebarToggle.style.display = 'none';
-            console.log('hiding sidebar toggle');
+            console.log('🖥️ Desktop detected - hiding sidebar toggle');
         }
     }
 
     // Call on load and on resize
+    console.log('Calling updateSidebarToggleVisibility on load...');
     updateSidebarToggleVisibility();
+
     window.addEventListener('resize', updateSidebarToggleVisibility);
+    console.log('Added resize listener');
 
     sidebarToggle.addEventListener('click', () => {
+        console.log('Sidebar toggle clicked');
         sidebar.classList.toggle('open');
     });
 }
 
 // Initialize when DOM is ready
+console.log('Script loaded, document.readyState:', document.readyState);
 if (document.readyState === 'loading') {
+    console.log('DOM still loading, waiting for DOMContentLoaded...');
     document.addEventListener('DOMContentLoaded', initSidebar);
 } else {
+    console.log('DOM already loaded, calling initSidebar immediately...');
     initSidebar();
 }
 
