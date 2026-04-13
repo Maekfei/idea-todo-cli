@@ -7,6 +7,7 @@ import json
 import webbrowser
 import threading
 import time
+import os
 
 app = Flask(__name__, static_folder='static', static_url_path='')
 
@@ -123,5 +124,6 @@ def open_browser():
 
 
 if __name__ == '__main__':
-    threading.Thread(target=open_browser, daemon=True).start()
-    app.run(debug=False, port=5000)
+    if os.getenv('FLASK_ENV') != 'production':
+        threading.Thread(target=open_browser, daemon=True).start()
+    app.run(debug=False, port=int(os.getenv('PORT', 5000)), host='0.0.0.0')
