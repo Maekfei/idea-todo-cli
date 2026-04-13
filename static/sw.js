@@ -36,14 +36,16 @@ self.addEventListener('fetch', event => {
     }
 
     if (request.url.includes('/api/')) {
+        // API calls: always fetch fresh data, don't cache
         event.respondWith(
-            fetch(request)
+            fetch(request, {cache: 'no-store'})
                 .then(response => response)
                 .catch(() => new Response(JSON.stringify([]), {
                     headers: {'Content-Type': 'application/json'}
                 }))
         );
     } else {
+        // Static assets: cache first
         event.respondWith(
             caches.match(request).then(response => {
                 return response || fetch(request).then(r => r).catch(() =>
