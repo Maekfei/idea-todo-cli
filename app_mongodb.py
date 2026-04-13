@@ -151,6 +151,8 @@ def delete_todo(todo_id):
 @app.route('/api/extract', methods=['POST'])
 def extract_text():
     """Extract ideas and todos from text using Kimi API"""
+    import json as json_lib
+
     data = request.json
     text = data.get('text', '')
 
@@ -159,9 +161,12 @@ def extract_text():
 
     api_key = os.getenv('KIMI_API_KEY')
     if not api_key:
+        print('ERROR: KIMI_API_KEY not configured')
         return jsonify({'error': 'API key not configured'}), 500
 
     try:
+        print(f'Calling Kimi API with text: {text[:100]}...')
+
         response = requests.post(
             'https://xuedingmao.top/v1/chat/completions',
             headers={
@@ -192,29 +197,39 @@ def extract_text():
             timeout=30
         )
 
+        print(f'API Response Status: {response.status_code}')
+
         if response.status_code != 200:
+            error_msg = response.text
+            print(f'API Error: {error_msg}')
             return jsonify({'error': f'API error: {response.status_code}'}), 500
 
         result = response.json()
         content = result['choices'][0]['message']['content']
 
+        print(f'API Content: {content}')
+
         # Parse JSON from response
-        import json as json_lib
         try:
             # Try to extract JSON from the response
             start = content.find('{')
             end = content.rfind('}') + 1
             if start >= 0 and end > start:
                 extracted = json_lib.loads(content[start:end])
+                print(f'Extracted: {extracted}')
                 return jsonify(extracted)
             else:
+                print('No JSON found in response')
                 return jsonify({'ideas': [], 'todos': []})
-        except:
+        except json_lib.JSONDecodeError as e:
+            print(f'JSON Parse Error: {e}')
             return jsonify({'ideas': [], 'todos': []})
 
     except requests.exceptions.Timeout:
+        print('API Request Timeout')
         return jsonify({'error': 'Request timeout'}), 504
     except Exception as e:
+        print(f'Extract Error: {str(e)}')
         return jsonify({'error': str(e)}), 500
 
 
